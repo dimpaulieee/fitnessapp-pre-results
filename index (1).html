@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Personal Fitness Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4ade80;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Welcome Animation */
+        .welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1.5s ease-out;
+        }
+        
+        .welcome-logo {
+            font-size: 5rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(76, 201, 240, 0.7);
+            animation: pulse 2s infinite, rotate 8s infinite linear;
+        }
+        
+        .welcome-title {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1.5s ease-out 0.5s forwards;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.8rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1.5s ease-out 1s forwards;
+        }
+        
+        .welcome-symbols {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .welcome-symbol {
+            position: absolute;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.3);
+            animation: floatSymbol 15s infinite linear;
+        }
+        
+        @keyframes floatSymbol {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+            }
+        }
+        
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: var(--accent);
+            text-shadow: 0 0 15px rgba(76, 201, 240, 0.7);
+            animation: pulse 3s infinite;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            box-shadow: 0 0 15px rgba(67, 97, 238, 0.5);
+        }
+        
+        .tab:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            color: var(--dark);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            animation: slideUp 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-header i {
+            font-size: 1.8rem;
+            margin-right: 15px;
+            color: var(--primary);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .progress-ring {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        
+        .progress-ring-circle {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .activity-timeline {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+        
+        .activity-item:hover {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 10px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .activity-time {
+            font-weight: 700;
+            min-width: 120px;
+            color: var(--primary);
+        }
+        
+        .activity-details {
+            flex: 1;
+        }
+        
+        .activity-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            background: var(--light);
+            font-weight: 600;
+        }
+        
+        .energy-level {
+            display: flex;
+            margin-top: 8px;
+        }
+        
+        .energy-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 4px;
+            background: #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .energy-dot.active {
+            transform: scale(1.2);
+        }
+        
+        .energy-dot.active.low {
+            background: var(--success);
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.7);
+        }
+        
+        .energy-dot.active.medium {
+            background: var(--warning);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+        }
+        
+        .energy-dot.active.high {
+            background: var(--danger);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 20px;
+        }
+        
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .type-cardio { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .type-strength { background: rgba(74, 222, 128, 0.15); color: var(--success); border: 1px solid rgba(74, 222, 128, 0.3); }
+        .type-leisure { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .type-school { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .type-eating { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .type-sleeping { background: rgba(107, 114, 128, 0.15); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); }
+        .type-commuting { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .type-study { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+        
+        .achievements {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .achievement-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .achievement-item:hover {
+            transform: translateX(5px);
+            background: rgba(0, 0, 0, 0.06);
+        }
+        
+        .achievement-item i {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            color: var(--primary);
+        }
+        
+        .achievement-item span {
+            flex: 1;
+            font-weight: 600;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            width: 150px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            border-radius: 5px;
+            transition: width 1.5s ease-in-out;
+        }
+        
+        .goal-card {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .goal-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .goal-text {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .goal-progress {
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .goal-progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            border-radius: 6px;
+            width: 64%;
+            transition: width 1.5s ease-in-out;
+        }
+        
+        .goal-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .goal-stat {
+            text-align: center;
+        }
+        
+        .goal-stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .goal-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .profile-picture {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 5px solid white;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .profile-picture i {
+            font-size: 5rem;
+            color: white;
+        }
+        
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .profile-details {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .profile-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .profile-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+        }
+        
+        .detail-value {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .principles-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .principle-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            color: var(--dark);
+        }
+        
+        .principle-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--primary);
+            text-align: center;
+        }
+        
+        .principle-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .principle-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .principle-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .principle-value {
+            color: var(--primary);
+        }
+        
+        .drive-button {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--primary);
+            color: white;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .drive-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.6);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 40px;
+            font-size: 1rem;
+            opacity: 0.8;
+            animation: fadeIn 1s ease-out;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .principles-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .welcome-title {
+                font-size: 2.5rem;
+            }
+            
+            .welcome-subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .welcome-logo {
+                font-size: 3.5rem;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --card-bg: rgba(30, 30, 40, 0.9);
+                --light: #e0e0e0;
+                --dark: #f0f0f0;
+            }
+            
+            body {
+                background: linear-gradient(135deg, #0f1b3d, #1a2c5a);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Animation -->
+    <div class="welcome-overlay" id="welcomeOverlay">
+        <div class="welcome-symbols" id="welcomeSymbols"></div>
+        <div class="welcome-logo">
+            <i class="fas fa-heartbeat"></i>
+        </div>
+        <h1 class="welcome-title">My Personal Fitness Tracker</h1>
+        <p class="welcome-subtitle">by: Paul Andrei C. Timpog</p>
+    </div>
+    
+    <div class="floating-elements" id="floatingElements"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <h1>My Personal Fitness Tracker</h1>
+            <p class="subtitle">Tracking progress towards fitness goals</p>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="overview">Overview</div>
+                <div class="tab" data-tab="profile">Profile</div>
+                <div class="tab" data-tab="activities">Activities</div>
+                <div class="tab" data-tab="progress">Progress</div>
+                <div class="tab" data-tab="principles">SMART & FITT</div>
+            </div>
+        </header>
+        
+        <div class="tab-content active" id="overview">
+            <div class="dashboard">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user"></i>
+                        <h2 class="card-title">User Profile</h2>
+                    </div>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value" id="weight">58</div>
+                            <div class="stat-label">Weight (kg)</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="height">167</div>
+                            <div class="stat-label">Height (cm)</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="bmi">20.8</div>
+                            <div class="stat-label">BMI</div>
+                        </div>
+                    </div>
+                    <div class="progress-ring">
+                        <svg width="150" height="150">
+                            <circle class="progress-ring-circle" stroke="#4361ee" stroke-width="10" fill="transparent" r="65" cx="75" cy="75"/>
+                        </svg>
+                        <div class="progress-text" id="progressPercent">64%</div>
+                    </div>
+                    <p style="text-align: center; margin-top: 20px; font-weight: 600;">Goal: Lose Fat / Improve Cardio</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-fire"></i>
+                        <h2 class="card-title">Activity Summary</h2>
+                    </div>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value" id="workouts">15</div>
+                            <div class="stat-label">Workouts</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="meals">54</div>
+                            <div class="stat-label">Meals Logged</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="activities">150</div>
+                            <div class="stat-label">Activities</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h2 class="card-title">Energy Levels</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-running"></i>
+                        <h2 class="card-title">Recent Activities</h2>
+                    </div>
+                    <div class="activity-timeline" id="activityTimeline">
+                        <!-- Activities will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h2 class="card-title">Activity Distribution</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-trophy"></i>
+                        <h2 class="card-title">Achievements</h2>
+                    </div>
+                    <div class="achievements">
+                        <div class="achievement-item">
+                            <i class="fas fa-walking"></i>
+                            <span>10K Steps Daily</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        <div class="achievement-item">
+                            <i class="fas fa-dumbbell"></i>
+                            <span>Strength Training</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 40%"></div>
+                            </div>
+                        </div>
+                        <div class="achievement-item">
+                            <i class="fas fa-utensils"></i>
+                            <span>Nutrition Goals</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div class="achievement-item">
+                            <i class="fas fa-bed"></i>
+                            <span>Sleep Consistency</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="profile">
+            <div class="dashboard">
+                <div class="card">
+                    <div class="profile-container">
+                       <div class="profile-picture">
+    <img src="your-image-url.jpg" >
+</div>
+                        <h2 class="profile-name">Paul Andrei C. Timpog</h2>
+                        <p style="margin-bottom: 20px; font-size: 1.1rem;">Fitness Enthusiast & Student</p>
+                        
+                        <div class="profile-details">
+                            <div class="profile-detail">
+                                <span class="detail-label">Username:</span>
+                                <span class="detail-value">Timpog, Paul Andrei C.</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">Email:</span>
+                                <span class="detail-value">paulandreitimpogjslk0@gmail.com</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">Weight:</span>
+                                <span class="detail-value">58 kg</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">Height:</span>
+                                <span class="detail-value">167 cm</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">BMI:</span>
+                                <span class="detail-value">20.8 (Healthy)</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">Fitness Goal:</span>
+                                <span class="detail-value">Lose Fat / Improve Cardio</span>
+                            </div>
+                            <div class="profile-detail">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Oct 20, 2025</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h2 class="card-title">Progress Summary</h2>
+                    </div>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">150</div>
+                            <div class="stat-label">Activities</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">64%</div>
+                            <div class="stat-label">Goal Progress</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">21</div>
+                            <div class="stat-label">Days Active</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="profileProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="activities">
+            <div class="dashboard">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-list-alt"></i>
+                        <h2 class="card-title">All Activities</h2>
+                    </div>
+                    <div class="activity-timeline" id="allActivities">
+                        <!-- All activities will be populated by JavaScript -->
+                    </div>
+                    <div style="text-align: center;">
+                        <a href="https://drive.google.com/drive/folders/1bhotIQBuNlXxfoJVXPY79oPd7X9GPucA?usp=drive_link" target="_blank" class="drive-button">
+                            <i class="fas fa-external-link-alt"></i> View All Activity Photos
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie"></i>
+                        <h2 class="card-title">Activity Analysis</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activityAnalysisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="progress">
+            <div class="dashboard">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <h2 class="card-title">Progress Over Time</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card goal-card">
+                    <div class="goal-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="goal-text">Fat Loss & Cardio Progress</div>
+                    <div class="goal-progress">
+                        <div class="goal-progress-fill"></div>
+                    </div>
+                    <div class="goal-stats">
+                        <div class="goal-stat">
+                            <div class="goal-stat-value">64%</div>
+                            <div class="goal-stat-label">Completed</div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-stat-value">36%</div>
+                            <div class="goal-stat-label">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="principles">
+            <div class="dashboard">
+                <div class="card">
+                    <div class="principle-title">SMART Goal Builder</div>
+                    <div class="principles-container">
+                        <div class="principle-card">
+                            <div class="principle-item">
+                                <div class="principle-label">Specific Goal:</div>
+                                <div class="principle-value">Lose Fat/ Improve Cardio</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Measurable Target:</div>
+                                <div class="principle-value">Run 5km with 7:00 per km and build upper body</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Days per Week:</div>
+                                <div class="principle-value">4 days</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Why is this important?</div>
+                                <div class="principle-value">It is important because as someone who is immersed with academics, I am more prone to diseases. That's why, exercising and improving your overall lifestyle can help you gain confidence at the same time to make you healthy.</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Time-bound:</div>
+                                <div class="principle-value">28 days</div>
+                            </div>
+                        </div>
+                        
+                        <div class="principle-card">
+                            <div class="principle-title">F.I.T.T. Principle</div>
+                            <div class="principle-item">
+                                <div class="principle-label">Frequency:</div>
+                                <div class="principle-value">3 days/week</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Intensity:</div>
+                                <div class="principle-value">Moderate to Vigorous</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Time (minutes per session):</div>
+                                <div class="principle-value">45</div>
+                            </div>
+                            <div class="principle-item">
+                                <div class="principle-label">Type of Exercise:</div>
+                                <div class="principle-value">Cardio - Running</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-check"></i>
+                        <h2 class="card-title">Goal Progress</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="goalProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>My Personal Tracker &copy; 2025 | Last updated: <span id="lastUpdate">Nov 6, 2025</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Welcome animation
+        window.addEventListener('load', function() {
+            // Create floating symbols for welcome animation
+            const symbolsContainer = document.getElementById('welcomeSymbols');
+            const symbols = ['🏃', '💪', '🥗', '🚶', '🏋️', '🧘', '⚡', '🔥'];
+            
+            for (let i = 0; i < 20; i++) {
+                const symbol = document.createElement('div');
+                symbol.classList.add('welcome-symbol');
+                symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                symbol.style.left = `${Math.random() * 100}%`;
+                symbol.style.animationDelay = `${Math.random() * 15}s`;
+                symbol.style.fontSize = `${Math.random() * 2 + 1.5}rem`;
+                symbolsContainer.appendChild(symbol);
+            }
+            
+            setTimeout(function() {
+                document.getElementById('welcomeOverlay').style.opacity = '0';
+                setTimeout(function() {
+                    document.getElementById('welcomeOverlay').style.display = 'none';
+                }, 1500);
+            }, 3000);
+        });
+
+        // Create floating elements
+        const floatingContainer = document.getElementById('floatingElements');
+        for (let i = 0; i < 25; i++) {
+            const element = document.createElement('div');
+            element.classList.add('floating-element');
+            const size = Math.random() * 80 + 10;
+            element.style.width = `${size}px`;
+            element.style.height = `${size}px`;
+            element.style.left = `${Math.random() * 100}%`;
+            element.style.animationDelay = `${Math.random() * 20}s`;
+            element.style.animationDuration = `${20 + Math.random() * 25}s`;
+            element.style.background = `rgba(255, 255, 255, ${Math.random() * 0.2})`;
+            floatingContainer.appendChild(element);
+        }
+
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Sample data processing (in a real app, this would come from the JSON)
+        const activityData = {
+            labels: ['Oct 20', 'Oct 21', 'Oct 22', 'Oct 23', 'Oct 24', 'Oct 25', 'Oct 26', 'Oct 27', 'Oct 28', 'Oct 29', 'Oct 30', 'Oct 31', 'Nov 1', 'Nov 2', 'Nov 3', 'Nov 4', 'Nov 5', 'Nov 6'],
+            datasets: [{
+                label: 'Cardio',
+                data: [2, 1, 3, 1, 2, 4, 1, 0, 1, 1, 0, 0, 0, 2, 2, 2, 0, 0],
+                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 2
+            }, {
+                label: 'Strength',
+                data: [0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                backgroundColor: 'rgba(74, 222, 128, 0.7)',
+                borderColor: 'rgba(74, 222, 128, 1)',
+                borderWidth: 2
+            }]
+        };
+
+        const energyData = {
+            labels: ['5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM'],
+            datasets: [{
+                label: 'Average Energy Level',
+                data: [3, 2.7, 2.4, 2.4, 2.7, 2.7, 2.7, 2.4, 2.7, 2.7, 2.7, 2.7, 3, 3, 2.7, 2.7, 3, 3],
+                backgroundColor: 'rgba(76, 201, 240, 0.2)',
+                borderColor: 'rgba(76, 201, 240, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        const distributionData = {
+            labels: ['Cardio', 'Strength', 'Leisure', 'School', 'Eating', 'Sleeping', 'Commuting', 'Study'],
+            datasets: [{
+                data: [18, 5, 45, 50, 20, 15, 8, 10],
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.7)',
+                    'rgba(74, 222, 128, 0.7)',
+                    'rgba(59, 130, 246, 0.7)',
+                    'rgba(168, 85, 247, 0.7)',
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(107, 114, 128, 0.7)',
+                    'rgba(16, 185, 129, 0.7)',
+                    'rgba(249, 115, 22, 0.7)'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        };
+
+        const activityAnalysisData = {
+            labels: ['Cardio', 'Strength', 'Leisure', 'School', 'Eating', 'Sleeping', 'Commuting', 'Study'],
+            datasets: [{
+                label: 'Activity Duration (hours)',
+                data: [12, 8, 25, 40, 10, 30, 6, 15],
+                backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                borderColor: 'rgba(67, 97, 238, 1)',
+                borderWidth: 2
+            }]
+        };
+
+        // Updated progress data for 3 weeks only
+        const progressData = {
+            labels: ['Week 1', 'Week 2', 'Week 3'],
+            datasets: [{
+                label: 'Cardio Progress',
+                data: [30, 45, 64],
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Strength Progress',
+                data: [25, 40, 55],
+                backgroundColor: 'rgba(74, 222, 128, 0.2)',
+                borderColor: 'rgba(74, 222, 128, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        const nutritionData = {
+            labels: ['Protein', 'Carbs', 'Fats', 'Fiber', 'Vitamins'],
+            datasets: [{
+                data: [35, 45, 20, 25, 30],
+                backgroundColor: [
+                    'rgba(74, 222, 128, 0.7)',
+                    'rgba(59, 130, 246, 0.7)',
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(168, 85, 247, 0.7)',
+                    'rgba(76, 201, 240, 0.7)'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        };
+
+        const profileProgressData = {
+            labels: ['Oct 20-26', 'Oct 27-Nov 2', 'Nov 3-6'],
+            datasets: [{
+                label: 'Activities Completed',
+                data: [35, 65, 50],
+                backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                borderColor: 'rgba(67, 97, 238, 1)',
+                borderWidth: 2
+            }]
+        };
+
+        const goalProgressData = {
+            labels: ['Week 1', 'Week 2', 'Week 3'],
+            datasets: [{
+                label: 'Goal Completion %',
+                data: [20, 45, 64],
+                backgroundColor: 'rgba(76, 201, 240, 0.2)',
+                borderColor: 'rgba(76, 201, 240, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        // Initialize charts
+        window.onload = function() {
+            // Activity Chart
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'bar',
+                data: activityData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+
+            // Energy Chart
+            const energyCtx = document.getElementById('energyChart').getContext('2d');
+            new Chart(energyCtx, {
+                type: 'line',
+                data: energyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 5,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Distribution Chart
+            const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+            new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: distributionData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Activity Analysis Chart
+            const activityAnalysisCtx = document.getElementById('activityAnalysisChart').getContext('2d');
+            new Chart(activityAnalysisCtx, {
+                type: 'bar',
+                data: activityAnalysisData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Progress Chart (Updated for 3 weeks)
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            new Chart(progressCtx, {
+                type: 'line',
+                data: progressData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Profile Progress Chart
+            const profileProgressCtx = document.getElementById('profileProgressChart').getContext('2d');
+            new Chart(profileProgressCtx, {
+                type: 'bar',
+                data: profileProgressData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Goal Progress Chart
+            const goalProgressCtx = document.getElementById('goalProgressChart').getContext('2d');
+            new Chart(goalProgressCtx, {
+                type: 'line',
+                data: goalProgressData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Nutrition Chart
+            const nutritionCtx = document.getElementById('nutritionChart').getContext('2d');
+            new Chart(nutritionCtx, {
+                type: 'polarArea',
+                data: nutritionData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Populate activity timeline
+            const activities = [
+                { time: "Nov 6, 9PM", type: "strength", details: "4 different angles of 3 sets, 5 reps of push up for chest", energy: 5 },
+                { time: "Nov 6, 8PM", type: "eating", details: "Dinner, then rest", energy: 3 },
+                { time: "Nov 6, 7PM", type: "sleeping", details: "Power Nap", energy: 3 },
+                { time: "Nov 6, 6PM", type: "school", details: "Math in Modern World (Quiz), then going home", energy: 3 },
+                { time: "Nov 6, 5PM", type: "school", details: "Math in Modern World (Discussion)", energy: 3 },
+                { time: "Nov 6, 4PM", type: "school", details: "Awarding Ceremony CYC", energy: 3 },
+                { time: "Nov 6, 3PM", type: "school", details: "Drawing Finals", energy: 3 },
+                { time: "Nov 6, 2PM", type: "school", details: "Drawing Finals", energy: 3 }
+            ];
+
+            const allActivities = [
+                { time: "Nov 6, 1PM", type: "school", details: "Drawing Finals", energy: 3 },
+                { time: "Nov 6, 12PM", type: "eating", details: "Lunch", energy: 3 },
+                { time: "Nov 6, 11AM", type: "school", details: "Physics and Chem Class (Group Work and Activity)", energy: 3 },
+                { time: "Nov 6, 10AM", type: "school", details: "Physics and Chem Class (Lecture)", energy: 3 },
+                { time: "Nov 6, 9AM", type: "school", details: "Physics and Chem Class", energy: 3 },
+                { time: "Nov 6, 8AM", type: "school", details: "Essay Writing Contest", energy: 3 },
+                { time: "Nov 6, 7AM", type: "school", details: "Preparing then going to school for the contest", energy: 3 },
+                { time: "Nov 6, 6AM", type: "leisure", details: "Cooking food, eating breakfast, preparing my drawing tools for later", energy: 3 },
+                { time: "Nov 5, 9PM", type: "study", details: "Preparing for the Essay contest tomorrow", energy: 3 },
+                { time: "Nov 5, 8PM", type: "eating", details: "Dinner", energy: 3 },
+                { time: "Nov 5, 7PM", type: "leisure", details: "", energy: 3 },
+                { time: "Nov 5, 6PM", type: "school", details: "Math in Modern World Class and Exam", energy: 3 }
+            ];
+
+            const meals = [
+                { time: "Nov 6, 12PM", type: "eating", details: "Lunch", energy: 3 },
+                { time: "Nov 5, 8PM", type: "eating", details: "Dinner", energy: 3 },
+                { time: "Nov 5, 12PM", type: "eating", details: "Barely eating lunch", energy: 3 },
+                { time: "Nov 5, 6AM", type: "eating", details: "Having a breakfast", energy: 3 },
+                { time: "Nov 4, 12PM", type: "eating", details: "Lunch", energy: 3 },
+                { time: "Nov 3, 1PM", type: "eating", details: "Lunch", energy: 3 },
+                { time: "Nov 3, 9AM", type: "eating", details: "Eating burger", energy: 3 }
+            ];
+
+            function createActivityElement(activity) {
+                const item = document.createElement('div');
+                item.classList.add('activity-item');
+                
+                let energyDots = '';
+                for (let i = 1; i <= 5; i++) {
+                    let energyClass = i <= activity.energy ? 'active' : '';
+                    if (i <= activity.energy) {
+                        if (i <= 2) energyClass += ' low';
+                        else if (i <= 4) energyClass += ' medium';
+                        else energyClass += ' high';
+                    }
+                    energyDots += `<div class="energy-dot ${energyClass}"></div>`;
+                }
+                
+                item.innerHTML = `
+                    <div class="activity-time">${activity.time}</div>
+                    <div class="activity-details">
+                        <span class="activity-type type-${activity.type}">${activity.type}</span>
+                        ${activity.details}
+                        <div class="energy-level">
+                            ${energyDots}
+                        </div>
+                    </div>
+                `;
+                
+                return item;
+            }
+
+            const timeline = document.getElementById('activityTimeline');
+            activities.forEach(activity => {
+                timeline.appendChild(createActivityElement(activity));
+            });
+
+            const allActivitiesContainer = document.getElementById('allActivities');
+            allActivities.forEach(activity => {
+                allActivitiesContainer.appendChild(createActivityElement(activity));
+            });
+
+            const mealHistoryContainer = document.getElementById('mealHistory');
+            if (mealHistoryContainer) {
+                meals.forEach(meal => {
+                    mealHistoryContainer.appendChild(createActivityElement(meal));
+                });
+            }
+
+            // Animate progress ring
+            const progressRing = document.querySelector('.progress-ring-circle');
+            const progressText = document.getElementById('progressPercent');
+            const radius = progressRing.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            
+            progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressRing.style.strokeDashoffset = circumference;
+            
+            // Animate to 64% progress
+            const setProgress = (percent) => {
+                const offset = circumference - (percent / 100) * circumference;
+                progressRing.style.strokeDashoffset = offset;
+                progressText.textContent = `${percent}%`;
+            };
+            
+            // Animate after a short delay
+            setTimeout(() => {
+                setProgress(64);
+            }, 500);
+            
+            // Add pulse animation to important elements
+            const importantElements = document.querySelectorAll('.stat-value, .progress-text, .goal-stat-value');
+            importantElements.forEach(el => {
+                el.classList.add('pulse');
+            });
+
+            // Animate progress bars
+            setTimeout(() => {
+                document.querySelectorAll('.progress-fill').forEach(bar => {
+                    bar.style.width = bar.style.width;
+                });
+            }, 800);
+        };
+    </script>
+</body>
+</html>
